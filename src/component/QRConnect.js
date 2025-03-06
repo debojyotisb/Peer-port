@@ -6,6 +6,7 @@ const QRConnect = () => {
   const [mode, setMode] = useState(null); // "generate" or "scan"
   const [qrData, setQrData] = useState(""); // Data to encode
   const [scannedResult, setScannedResult] = useState(null);
+  const [status, setStatus] = useState("Not Connected"); 
 
   const generateQRCode = () => {
     const connectionId = `peerport-${Math.random().toString(36).substr(2, 9)}`;
@@ -16,6 +17,7 @@ const QRConnect = () => {
   const handleScan = (data) => {
     if (data) {
       console.log("Scanned Data:", data);
+      setStatus("Connected");
       setScannedResult(data);
       setMode(null); // Hide scanner after scan
     }
@@ -27,7 +29,7 @@ const QRConnect = () => {
 
   return (
     <div>
-      <h2>PeerPort Connection</h2>
+      <h2>PeerPort</h2>
 
       {!mode && (
         <div>

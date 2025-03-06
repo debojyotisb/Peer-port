@@ -8,14 +8,39 @@ const PeerPort = () => {
   const [files, setFiles] = useState([]);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
+  const [status, setStatus] = useState("Not Connected");
+  const [peer, setPeer] = useState(null);
 
-  const handleConnect = (peer) => {
-    console.log("Connected to peer", peer);
+
+
+  const handleConnect = (newPeer) => {
+    console.log("Connected to peer", newPeer);
+    setPeer(newPeer); // ✅ Store the peer connection
     setConnected(true);
+    setStatus("Connected");
+  
+    peer.on("data", (data) => {
+      const message = JSON.parse(data);
+      if (message.type === "fileSelected") {
+        alert(`Peer selected files: ${message.files.join(", ")}`);
+      }
+      if (message.type === "fileTransferStarted") {
+        setProgress(50);
+      }
+      if (message.type === "fileTransferCompleted") {
+        setProgress(100);
+      }
+    });
   };
+  
 
   const handleFileSelection = (e) => {
-    setFiles([...e.target.files]);
+    const selectedFiles = [...e.target.files];
+    setFiles(selectedFiles);
+
+    if (peer) { // ✅ If connected, send file details
+      peer.send(JSON.stringify({ type: "fileSelected", files: selectedFiles.map(f => f.name) }));
+    }
   };
 
   const handleFileTransfer = () => {
@@ -23,16 +48,29 @@ const PeerPort = () => {
       setError("Select a file first.");
       return;
     }
+    
     setProgress(0);
-    setTimeout(() => setProgress(100), 3000);
+    
+    if (peer) {
+      peer.send(JSON.stringify({ type: "fileTransferStarted" })); // Notify peer
+    }
+  
+    setTimeout(() => {
+      setProgress(100);
+  
+      if (peer) {
+        peer.send(JSON.stringify({ type: "fileTransferCompleted" })); // Notify peer
+      }
+    }, 3000);
   };
+  
 
   return (
     <div className="container text-center">
       {/* <h1>PeerPort</h1> */}
 
       <Connection onConnect={handleConnect} />
-      {!connected && <QRConnect connectionId="peer-1234" onScan={() => setConnected(true)} />}
+      {!connected && <QRConnect connectionId="peer-1234" onScan={() => {setConnected(true); setStatus("Connected")}} />}
 
       {connected && (
         <>

@@ -13,6 +13,9 @@ const QRScanner = ({ onScan, onError, onClose }) => {
       <QrReader
         delay={300}
         style={previewStyle}
+        constraints={{
+            video: { facingMode: "environment" }, // Forces rear camera
+          }}
         onScan={(data) => {
           if (data) {
             console.log("Scanned QR Data:", data); // Debugging
