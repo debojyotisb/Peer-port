@@ -1,12 +1,11 @@
 import React, { useState } from "react";
-import {QRCodeCanvas} from "qrcode.react"; // Import QR code generator
+import { QRCodeCanvas } from "qrcode.react"; // Import QR code generator
 import QRScanner from "./QRScanner"; // Import your scanner component
 
-const QRConnect = () => {
+const QRConnect = ({ onScan }) => {
   const [mode, setMode] = useState(null); // "generate" or "scan"
   const [qrData, setQrData] = useState(""); // Data to encode
-  const [scannedResult, setScannedResult] = useState(null);
-  const [status, setStatus] = useState("Not Connected"); 
+  const [status, setStatus] = useState("Not Connected");
 
   const generateQRCode = () => {
     const connectionId = `peerport-${Math.random().toString(36).substr(2, 9)}`;
@@ -18,8 +17,8 @@ const QRConnect = () => {
     if (data) {
       console.log("Scanned Data:", data);
       setStatus("Connected");
-      setScannedResult(data);
       setMode(null); // Hide scanner after scan
+      onScan(data); // Notify parent component
     }
   };
 
@@ -42,7 +41,6 @@ const QRConnect = () => {
         </div>
       )}
 
-      {/* Show QR Code when in generate mode */}
       {mode === "generate" && qrData && (
         <div>
           <h3>Scan this QR to connect</h3>
@@ -50,13 +48,11 @@ const QRConnect = () => {
         </div>
       )}
 
-      {/* Show Scanner when in scan mode */}
       {mode === "scan" && (
         <QRScanner onScan={handleScan} onError={handleError} onClose={() => setMode(null)} />
       )}
 
-      {/* Show scanned result */}
-      {scannedResult && <p>Scanned Data: {scannedResult}</p>}
+      {status === "Connected" && <p className="text-success">✅ Connected</p>}
     </div>
   );
 };

@@ -8,18 +8,15 @@ const PeerPort = () => {
   const [files, setFiles] = useState([]);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState(null);
-  const [status, setStatus] = useState("Not Connected");
   const [peer, setPeer] = useState(null);
-
-
 
   const handleConnect = (newPeer) => {
     console.log("Connected to peer", newPeer);
-    setPeer(newPeer); // ✅ Store the peer connection
+    setPeer(newPeer);
     setConnected(true);
-    setStatus("Connected");
-  
-    peer.on("data", (data) => {
+
+    // Listening for incoming messages from the peer
+    newPeer.on("data", (data) => {
       const message = JSON.parse(data);
       if (message.type === "fileSelected") {
         alert(`Peer selected files: ${message.files.join(", ")}`);
@@ -32,13 +29,12 @@ const PeerPort = () => {
       }
     });
   };
-  
 
   const handleFileSelection = (e) => {
     const selectedFiles = [...e.target.files];
     setFiles(selectedFiles);
 
-    if (peer) { // ✅ If connected, send file details
+    if (peer) {
       peer.send(JSON.stringify({ type: "fileSelected", files: selectedFiles.map(f => f.name) }));
     }
   };
@@ -48,29 +44,24 @@ const PeerPort = () => {
       setError("Select a file first.");
       return;
     }
-    
+
     setProgress(0);
-    
     if (peer) {
-      peer.send(JSON.stringify({ type: "fileTransferStarted" })); // Notify peer
+      peer.send(JSON.stringify({ type: "fileTransferStarted" }));
     }
-  
+
     setTimeout(() => {
       setProgress(100);
-  
       if (peer) {
-        peer.send(JSON.stringify({ type: "fileTransferCompleted" })); // Notify peer
+        peer.send(JSON.stringify({ type: "fileTransferCompleted" }));
       }
     }, 3000);
   };
-  
 
   return (
     <div className="container text-center">
-      {/* <h1>PeerPort</h1> */}
-
       <Connection onConnect={handleConnect} />
-      {!connected && <QRConnect connectionId="peer-1234" onScan={() => {setConnected(true); setStatus("Connected")}} />}
+      {!connected && <QRConnect onScan={() => setConnected(true)} />}
 
       {connected && (
         <>
