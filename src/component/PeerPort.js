@@ -3,6 +3,8 @@ import Connection from "./Connection";
 import QRConnect from "./QRConnect";
 import { FilePlus, Send, CheckCircle, XCircle } from "lucide-react";
 
+const CHUNK_SIZE = 16384; // 16KB per chunk
+
 const PeerPort = () => {
   const [connected, setConnected] = useState(false);
   const [files, setFiles] = useState([]);
@@ -14,18 +16,28 @@ const PeerPort = () => {
     console.log("Connected to peer", newPeer);
     setPeer(newPeer);
     setConnected(true);
+    
+    let receivedChunks = [];
+    let receivedFileName = "";
 
-    // Listening for incoming messages from the peer
     newPeer.on("data", (data) => {
-      const message = JSON.parse(data);
-      if (message.type === "fileSelected") {
-        alert(`Peer selected files: ${message.files.join(", ")}`);
-      }
-      if (message.type === "fileTransferStarted") {
-        setProgress(50);
-      }
-      if (message.type === "fileTransferCompleted") {
-        setProgress(100);
+      if (typeof data === "string") {
+        const message = JSON.parse(data);
+        if (message.type === "fileInfo") {
+          receivedFileName = message.fileName;
+          receivedChunks = [];
+        } 
+        if (message.type === "fileTransferComplete") {
+          const receivedFile = new Blob(receivedChunks);
+          const downloadLink = document.createElement("a");
+          downloadLink.href = URL.createObjectURL(receivedFile);
+          downloadLink.download = receivedFileName || "received_file";
+          downloadLink.click();
+          setProgress(100);
+        }
+      } else {
+        receivedChunks.push(data);
+        setProgress((prev) => Math.min(prev + 10, 100));
       }
     });
   };
@@ -35,7 +47,7 @@ const PeerPort = () => {
     setFiles(selectedFiles);
 
     if (peer) {
-      peer.send(JSON.stringify({ type: "fileSelected", files: selectedFiles.map(f => f.name) }));
+      peer.send(JSON.stringify({ type: "fileInfo", fileName: selectedFiles[0].name }));
     }
   };
 
@@ -46,16 +58,30 @@ const PeerPort = () => {
     }
 
     setProgress(0);
-    if (peer) {
-      peer.send(JSON.stringify({ type: "fileTransferStarted" }));
-    }
+    const file = files[0];
+    const reader = new FileReader();
+    reader.readAsArrayBuffer(file);
 
-    setTimeout(() => {
-      setProgress(100);
-      if (peer) {
-        peer.send(JSON.stringify({ type: "fileTransferCompleted" }));
-      }
-    }, 3000);
+    reader.onload = (event) => {
+      const arrayBuffer = event.target.result;
+      const totalChunks = Math.ceil(arrayBuffer.byteLength / CHUNK_SIZE);
+      let offset = 0;
+      let chunkIndex = 0;
+
+      const sendNextChunk = () => {
+        if (offset < arrayBuffer.byteLength) {
+          const chunk = arrayBuffer.slice(offset, offset + CHUNK_SIZE);
+          peer.send(chunk);
+          offset += CHUNK_SIZE;
+          chunkIndex++;
+          setProgress(Math.round((chunkIndex / totalChunks) * 100));
+          setTimeout(sendNextChunk, 50);
+        } else {
+          peer.send(JSON.stringify({ type: "fileTransferComplete" }));
+        }
+      };
+      sendNextChunk();
+    };
   };
 
   return (
