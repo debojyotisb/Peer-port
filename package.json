@@ -12,7 +12,8 @@
     "react-qr-scanner": "^1.0.0-alpha.11",
     "react-scripts": "5.0.1",
     "simple-peer": "^9.11.1",
-    "tailwindcss": "^4.0.1"
+    "tailwindcss": "^4.0.1",
+    "ws": "^8.18.1"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -38,5 +39,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "description": "This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).",
+  "main": "index.js",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
