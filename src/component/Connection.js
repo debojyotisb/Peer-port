@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 const Connection = ({ onConnect }) => {
   const [status, setStatus] = useState("Not Connected");
   const peerConnection = useRef(new RTCPeerConnection());
-  const socket = new WebSocket("ws://192.168.1.8:8080");
+  const socket = new WebSocket("wss://192.168.1.8:8080");
 
 
   useEffect(() => {
