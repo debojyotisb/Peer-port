@@ -7,7 +7,7 @@ const Connection = ({ onConnect }) => {
 
   useEffect(() => {
     // Use `ws://` instead of `wss://` if running locally without SSL
-    socketRef.current = new WebSocket("ws://192.168.1.8:8080");
+    socketRef.current = new WebSocket("wss://peer-port.vercel.app:8080");
 
     socketRef.current.onopen = () => {
       console.log("Connected to WebSocket server");
