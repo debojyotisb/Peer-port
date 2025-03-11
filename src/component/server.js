@@ -57,34 +57,34 @@
 
 //3rd
 
-const fs = require("fs");
-const https = require("https");
-const WebSocket = require("ws");
+// const fs = require("fs");
+// const https = require("https");
+// const WebSocket = require("ws");
 
-// Load SSL Certificates
-const server = https.createServer({
-  cert: fs.readFileSync("path/to/fullchain.pem"), // Replace with your certificate path
-  key: fs.readFileSync("path/to/privkey.pem"), // Replace with your private key path
-});
+// // Load SSL Certificates
+// const server = https.createServer({
+//   cert: fs.readFileSync("path/to/fullchain.pem"), // Replace with your certificate path
+//   key: fs.readFileSync("path/to/privkey.pem"), // Replace with your private key path
+// });
 
-// WebSocket Server over WSS
-const wss = new WebSocket.Server({ server });
+// // WebSocket Server over WSS
+// const wss = new WebSocket.Server({ server });
 
-wss.on("connection", (socket) => {
-  console.log("New secure client connected!");
+// wss.on("connection", (socket) => {
+//   console.log("New secure client connected!");
 
-  socket.on("message", (message) => {
-    console.log("Received:", message);
-    wss.clients.forEach((client) => {
-      if (client !== socket && client.readyState === WebSocket.OPEN) {
-        client.send(message);
-      }
-    });
-  });
+//   socket.on("message", (message) => {
+//     console.log("Received:", message);
+//     wss.clients.forEach((client) => {
+//       if (client !== socket && client.readyState === WebSocket.OPEN) {
+//         client.send(message);
+//       }
+//     });
+//   });
 
-  socket.on("close", () => console.log("Client disconnected"));
-});
+//   socket.on("close", () => console.log("Client disconnected"));
+// });
 
-server.listen(8080, () => {
-  console.log("WSS Server running on port 8080");
-});
+// server.listen(8080, () => {
+//   console.log("WSS Server running on port 8080");
+// });

@@ -50,3 +50,20 @@
   justify-content: center;
   color: white;
 }
+
+.qr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .qr-container {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .qr-scanner-box {
+    margin-right: 20px;
+  }
+}

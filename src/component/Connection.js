@@ -1,55 +1,56 @@
 import React, { useState, useEffect, useRef } from "react";
 
-const Connection = ({ onConnect }) => {
+const Connection = ({ onConnect, peerId }) => {
   const [status, setStatus] = useState("Not Connected");
   const peerConnection = useRef(new RTCPeerConnection());
-  const socketRef = useRef(null);
 
   useEffect(() => {
-    // Use `ws://` instead of `wss://` if running locally without SSL
-    socketRef.current = new WebSocket("wss://peer-port.vercel.app:8080");
+    const checkForSignal = async () => {
+      try {
+        const response = await fetch(`/api/signaling?peerId=${peerId}`);
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        if (data.offer) {
+          await peerConnection.current.setRemoteDescription(new RTCSessionDescription(data.offer));
+          const answer = await peerConnection.current.createAnswer();
+          await peerConnection.current.setLocalDescription(answer);
 
-    socketRef.current.onopen = () => {
-      console.log("Connected to WebSocket server");
-      setStatus("Connected");
-    };
-
-    socketRef.current.onerror = (error) => {
-      console.error("WebSocket error:", error);
-      setStatus("Error");
-    };
-
-    socketRef.current.onmessage = (event) => {
-      const message = JSON.parse(event.data);
-      if (message.offer) {
-        peerConnection.current.setRemoteDescription(message.offer);
-        peerConnection.current.createAnswer().then((answer) => {
-          peerConnection.current.setLocalDescription(answer);
-          socketRef.current.send(JSON.stringify({ answer }));
-        });
-      } else if (message.answer) {
-        peerConnection.current.setRemoteDescription(message.answer);
+          // Send answer to signaling server
+          await fetch("/api/signaling", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ peerId, data: { answer } }),
+          });
+        } else if (data.answer) {
+          await peerConnection.current.setRemoteDescription(new RTCSessionDescription(data.answer));
+        }
+      } catch (error) {
+        console.error("Signaling error:", error);
       }
     };
 
-    peerConnection.current.onicecandidate = (event) => {
-      if (event.candidate) {
-        socketRef.current.send(JSON.stringify({ candidate: event.candidate }));
-      }
-    };
+    checkForSignal();
+    const interval = setInterval(checkForSignal, 3000); // Polling every 3 sec
+    return () => clearInterval(interval);
+  }, [peerId]);
 
-    peerConnection.current.onconnectionstatechange = () => {
-      setStatus(peerConnection.current.connectionState);
-      if (peerConnection.current.connectionState === "connected") {
-        onConnect(peerConnection.current);
-      }
-    };
+  peerConnection.current.onicecandidate = async (event) => {
+    if (event.candidate) {
+      await fetch("/api/signaling", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ peerId, data: { candidate: event.candidate } }),
+      });
+    }
+  };
 
-    return () => {
-      if (socketRef.current) socketRef.current.close();
-      peerConnection.current.close();
-    };
-  }, [onConnect]);
+  peerConnection.current.onconnectionstatechange = () => {
+    setStatus(peerConnection.current.connectionState);
+    if (peerConnection.current.connectionState === "connected") {
+      onConnect(peerConnection.current);
+    }
+  };
 
   return <div className="text-center">Connection Status: {status}</div>;
 };
