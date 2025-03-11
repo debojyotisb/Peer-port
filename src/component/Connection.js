@@ -48,6 +48,7 @@ const Connection = ({ onConnect, peerId }) => {
   peerConnection.current.onconnectionstatechange = () => {
     setStatus(peerConnection.current.connectionState);
     if (peerConnection.current.connectionState === "connected") {
+      setStatus("Connected");
       onConnect(peerConnection.current);
     }
   };

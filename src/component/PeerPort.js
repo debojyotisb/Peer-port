@@ -43,38 +43,32 @@ const PeerPort = () => {
   };
 
   const handleFileSelection = (e) => {
-    const selectedFiles = [...e.target.files];
+    const selectedFiles = [...e.target.files].map((file) => ({
+      name: file.name,
+      size: (file.size / 1024).toFixed(2) + " KB",
+      file,
+    }));
     setFiles(selectedFiles);
-
-    if (peer) {
-      peer.send(JSON.stringify({ type: "fileInfo", fileName: selectedFiles[0].name }));
-    }
   };
 
-  const handleFileTransfer = () => {
-    if (files.length === 0) {
-      setError("Select a file first.");
-      return;
-    }
-
+  const handleFileTransfer = (file) => {
+    if (!peer) return alert("Not connected to a peer!");
     setProgress(0);
-    const file = files[0];
+  
     const reader = new FileReader();
     reader.readAsArrayBuffer(file);
-
+  
     reader.onload = (event) => {
       const arrayBuffer = event.target.result;
-      const totalChunks = Math.ceil(arrayBuffer.byteLength / CHUNK_SIZE);
+      peer.send(JSON.stringify({ type: "fileInfo", fileName: file.name }));
+  
       let offset = 0;
-      let chunkIndex = 0;
-
       const sendNextChunk = () => {
         if (offset < arrayBuffer.byteLength) {
           const chunk = arrayBuffer.slice(offset, offset + CHUNK_SIZE);
           peer.send(chunk);
           offset += CHUNK_SIZE;
-          chunkIndex++;
-          setProgress(Math.round((chunkIndex / totalChunks) * 100));
+          setProgress((prev) => Math.min(prev + 10, 100));
           setTimeout(sendNextChunk, 50);
         } else {
           peer.send(JSON.stringify({ type: "fileTransferComplete" }));
@@ -90,27 +84,42 @@ const PeerPort = () => {
       {!connected && <QRConnect onScan={() => setConnected(true)} />}
 
       {connected && (
-        <>
-          <input type="file" className="d-none" id="fileInput" onChange={handleFileSelection} />
-          <label htmlFor="fileInput" className="btn btn-outline-primary">
-            <FilePlus /> Select Files
-          </label>
+  <>
+    <input type="file" className="d-none" id="fileInput" multiple onChange={handleFileSelection} />
+    <label htmlFor="fileInput" className="btn btn-outline-primary">
+      <FilePlus /> Select Files
+    </label>
 
-          <button className="btn btn-success mt-3" onClick={handleFileTransfer}>
-            <Send /> Send File
-          </button>
+    {/* Show selected files */}
+    {files.length > 0 && (
+      <div className="mt-3">
+        <h5>Selected Files:</h5>
+        <ul className="list-group">
+          {files.map((file, index) => (
+            <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
+              <span>
+                📄 {file.name} <small className="text-muted">({file.size})</small>
+              </span>
+              <button className="btn btn-sm btn-success" onClick={() => handleFileTransfer(file.file)}>
+                Send It 🚀
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
 
-          {progress > 0 && (
-            <div className="progress mt-3">
-              <div className="progress-bar" style={{ width: `${progress}%` }}>
-                {progress}%
-              </div>
-            </div>
-          )}
+    {progress > 0 && (
+      <div className="progress mt-3">
+        <div className="progress-bar" style={{ width: `${progress}%` }}>
+          {progress}%
+        </div>
+      </div>
+    )}
 
-          {progress === 100 && <div className="mt-3 text-success"><CheckCircle /> Transfer Complete</div>}
-        </>
-      )}
+    {progress === 100 && <div className="mt-3 text-success"><CheckCircle /> Transfer Complete</div>}
+  </>
+)}
 
       {error && <div className="text-danger mt-3"><XCircle /> {error}</div>}
     </div>

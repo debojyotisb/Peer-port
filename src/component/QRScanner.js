@@ -1,57 +1,22 @@
-// import React from "react";
-// import QrReader from "react-qr-scanner";
-
-// const QRScanner = ({ onScan }) => {
-//   const previewStyle = {
-//     height: 240, 
-//     width: "100%",
-//     // maxWidth: "250px", // Limit size on larger screens
-//   };
-
-//   return (
-//     <div className="qr-scanner-overlay text-center">
-//       <h3>Scan QR Code</h3>
-//       <QrReader
-//         delay={300}
-//         style={previewStyle}
-//         constraints={{
-//           video: { facingMode: "environment" }, // Use rear camera
-//         }}
-//         onScan={(data) => {
-//           if (data) {
-//             console.log("Scanned QR Data:", data);
-//             onScan(data.text || data);
-//           }
-//         }}
-//         onError={(err) => console.error("QR Scanner Error:", err)}
-//       />
-//     </div>
-//   );
-// };
-
-// export default QRScanner;
-
-
 import React, { useEffect, useRef } from "react";
+import jsQR from "jsqr";
 
 const QRScanner = ({ onScan }) => {
   const videoRef = useRef(null);
+  const canvasRef = useRef(null);
 
   useEffect(() => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      alert("Camera access is not supported on this device or browser.");
-      return;
-    }
-
     const startCamera = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { facingMode: { exact: "environment" } } // Use rear camera
+        });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
       } catch (error) {
         console.error("Error accessing camera:", error);
-        alert("Failed to access camera. Please check browser permissions.");
+        alert("Failed to access camera. Check browser permissions.");
       }
     };
 
@@ -64,9 +29,35 @@ const QRScanner = ({ onScan }) => {
     };
   }, []);
 
+  useEffect(() => {
+    const scanQRCode = () => {
+      if (!videoRef.current || !canvasRef.current) return;
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext("2d");
+
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+        
+        if (qrCode) {
+          console.log("Scanned QR Data:", qrCode.data);
+          onScan(qrCode.data);
+        }
+      }
+      requestAnimationFrame(scanQRCode);
+    };
+
+    requestAnimationFrame(scanQRCode);
+  }, []);
+
   return (
     <div>
       <video ref={videoRef} autoPlay playsInline />
+      <canvas ref={canvasRef} style={{ display: "none" }} />
     </div>
   );
 };
