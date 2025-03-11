@@ -21,7 +21,7 @@ const Connection = ({ onConnect, peerId }) => {
   useEffect(() => {
     const checkForSignal = async () => {
       try {
-        const response = await fetch(`/api/signaling?peerId=${peerId}`);
+        const response = await fetch("http://localhost:3001/api/signaling?peerId=test");
         if (!response.ok) return;
 
         const data = await response.json();
