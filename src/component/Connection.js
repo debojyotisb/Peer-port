@@ -21,7 +21,7 @@ const Connection = ({ onConnect, peerId }) => {
   useEffect(() => {
     const checkForSignal = async () => {
       try {
-        const response = await fetch("http://localhost:3001/api/signaling?peerId=test");
+        const response = await fetch("http://peer-port.vercel.app/api/signaling?peerId=test");
         if (!response.ok) return;
 
         const data = await response.json();

@@ -3,8 +3,17 @@ const cors = require("cors");
 
 const app = express();
 const PORT = 3001;  // Backend runs on a different port
+const allowedOrigins = [
+    "http://localhost:3000",  // Allow local development
+    "https://peer-port.vercel.app"  // Allow production frontend
+];
 
-app.use(cors({origin: "http://localhost:3000" }));  // Enable CORS
+app.use(cors({
+    origin: allowedOrigins,
+    methods: "GET,POST",
+    credentials: true  // Allow cookies if needed
+}));
+
 app.use(express.json());  // Parse JSON requests
 
 // API Route for Signaling
@@ -20,5 +29,5 @@ app.get("/api/signaling", (req, res) => {
 
 // Start the Server
 app.listen(PORT, () => {
-    console.log(`🚀 Server running on http://localhost:${PORT}`);
+    console.log(`🚀 Server running on ${PORT}`);
 });
